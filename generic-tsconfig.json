@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "downlevelIteration": true,
+    "module": "esnext",
+    "strict": true,
+    "moduleResolution": "node",
+    "outDir": ".ts-tmp",
+    "composite": true,
+    "declarationMap": false,
+    "baseUrl": "./",
+    "rootDir": "./",
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
+    "sourceMap": false
+  }
+}

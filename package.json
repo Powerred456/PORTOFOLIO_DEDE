@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "express": "^4.21.1",
+    "glightbox": "^3.3.0",
+    "idb": "^8.0.0"
+  }
+}

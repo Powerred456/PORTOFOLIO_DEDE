@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio</title>
+
+  <!-- Link to manifest file -->
+  <link rel="manifest" href="/assets/manifest.json">
+
+  <!-- Link ke GLightbox CSS via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/glightbox@3.0.7/dist/css/glightbox.min.css" rel="stylesheet">
+
+  <!-- Link ke file CSS Anda -->
+  <link rel="stylesheet" href="/style.css">
+
+</head>
+
+<body>
+  <!-- Konten halaman -->
+
+  <!-- Contoh gambar dengan GLightbox -->
+  <a href="https://unsplash.com/photos/a-close-up-of-a-white-swan-with-an-orange-beak-vdCjXTOvy5o" class="glightbox">
+    <img src="https://unsplash.com/photos/a-small-cart-is-driving-down-a-narrow-street-3s7k1IPGfrg" alt="Thumbnail" />
+  </a>
+
+  <!-- Tambahkan elemen lainnya sesuai dengan kebutuhan halaman -->
+
+  <!-- Script GLightbox via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/glightbox@3.0.7/dist/js/glightbox.min.js"></script>
+
+  <!-- Service Worker dan Push Notification Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mendaftar Service Worker untuk PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      }
+
+      // Minta izin untuk Push Notification
+      if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            console.log('Notification permission granted');
+          } else {
+            console.log('Notification permission denied');
+          }
+        });
+      }
+
+      // GLightbox Setup
+      const lightbox = GLightbox({
+        selector: '.glightbox' // Pilih elemen dengan class glightbox
+      });
+
+      // Setup IndexedDB untuk Proyek Portofolio Anda
+      const dbName = 'portfolio-database';
+      const storeName = 'projects';
+      let db;
+
+      function openDB() {
+        const dbPromise = idb.openDB(dbName, 1, {
+          upgrade(db) {
+            if (!db.objectStoreNames.contains(storeName)) {
+              db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+            }
+          }
+        });
+
+        dbPromise.then(database => {
+          db = database;
+          console.log('Database opened successfully');
+          loadData(); // Memuat data setelah DB dibuka
+        }).catch(err => {
+          console.log('Failed to open IndexedDB:', err);
+        });
+      }
+
+      function saveData(project) {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.add(project);
+        tx.done.then(() => {
+          console.log('Project saved to IndexedDB');
+        }).catch(err => {
+          console.log('Error saving project:', err);
+        });
+      }
+
+      function loadData() {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        store.getAll().then((projects) => {
+          if (projects.length === 0) {
+            console.log('No projects found, loading default.');
+            displayProjects(); // Menampilkan proyek default jika tidak ada di DB
+          } else {
+            console.log('Projects loaded from IndexedDB:', projects);
+            displayProjects(projects); // Menampilkan proyek dari IndexedDB
+          }
+        }).catch(err => {
+          console.log('Error loading projects:', err);
+          displayProjects(); // Menampilkan proyek default jika terjadi error
+        });
+      }
+
+      const defaultProjects = [
+        { title: 'Project 1', description: 'Deskripsi project 1', link: '#' },
+        { title: 'Project 2', description: 'Deskripsi project 2', link: '#' },
+        { title: 'Project 3', description: 'Deskripsi project 3', link: '#' },
+      ];
+
+      function displayProjects(projects = defaultProjects) {
+        const projectContainer = document.getElementById('project-container');
+        projectContainer.innerHTML = ''; // Membersihkan kontainer sebelum menampilkan
+
+        projects.forEach((project) => {
+          const projectElement = document.createElement('div');
+          projectElement.classList.add('project-card');
+          projectElement.innerHTML = `
+            <h3>${project.title}</h3>
+            <p>${project.description}</p>
+            <a href="${project.link}" target="_blank">Lihat Project</a>
+          `;
+          projectContainer.appendChild(projectElement);
+        });
+      }
+
+      function saveDefaultProjects() {
+        defaultProjects.forEach(project => saveData(project));
+      }
+
+      openDB();
+      saveDefaultProjects();
+    });
+  </script>
+</body>
+
+</html>
+
+  <!-- Theme color (optional but recommended for PWA) -->
+  <meta name="theme-color" content="#2196f3">
+</head>
+<body>
+  <!-- Area untuk menampilkan proyek -->
+  <div id="project-container"></div>
+
+  <!-- Optional script to register service worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(function(registration) {
+          console.log('Service Worker registered with scope:', registration.scope);
+        })
+        .catch(function(error) {
+          console.log('Service Worker registration failed:', error);
+        });
+    }
+  </script>
+
+  <!-- Tambahkan CDN untuk idb.js -->
+  <script src="https://cdn.jsdelivr.net/npm/idb@7.0.1/build/umd/idb.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mendaftar service worker untuk PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('/service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Service Worker registration failed:', error);
+          });
+      }
+
+      // Nama database dan object store untuk IndexedDB
+      const dbName = 'portfolio-database';
+      const storeName = 'projects';
+      let db;
+
+      // Fungsi untuk membuka atau membuat database IndexedDB
+      function openDB() {
+        const dbPromise = idb.openDB(dbName, 1, {
+          upgrade(db) {
+            if (!db.objectStoreNames.contains(storeName)) {
+              db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+            }
+          }
+        });
+
+        dbPromise.then(database => {
+          db = database;
+          console.log('Database opened successfully');
+          loadData(); // Memuat data setelah database dibuka
+        }).catch(err => {
+          console.log('Failed to open IndexedDB:', err);
+        });
+      }
+
+      // Fungsi untuk menyimpan data proyek ke IndexedDB
+      function saveData(project) {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.add(project);
+        tx.done.then(() => {
+          console.log('Project saved to IndexedDB');
+        }).catch(err => {
+          console.log('Error saving project:', err);
+        });
+      }
+
+      // Fungsi untuk mengambil semua data proyek dari IndexedDB
+      function loadData() {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        store.getAll().then((projects) => {
+          if (projects.length === 0) {
+            console.log('No projects found in IndexedDB, loading default projects.');
+            displayProjects(); // Menampilkan proyek default jika tidak ada di IndexedDB
+          } else {
+            console.log('Projects loaded from IndexedDB:', projects);
+            displayProjects(projects); // Menampilkan proyek dari IndexedDB
+          }
+        }).catch(err => {
+          console.log('Error loading projects from IndexedDB:', err);
+          displayProjects(); // Menampilkan proyek default jika ada error
+        });
+      }
+
+      // Data proyek default untuk di-cache
+      const defaultProjects = [
+        {
+          title: 'Project 1',
+          description: 'Deskripsi singkat project 1',
+          link: '#',
+        },
+        {
+          title: 'Project 2',
+          description: 'Deskripsi singkat project 2',
+          link: '#',
+        },
+        {
+          title: 'Project 3',
+          description: 'Deskripsi singkat project 3',
+          link: '#',
+        },
+      ];
+
+      // Fungsi untuk menampilkan proyek di halaman
+      function displayProjects(projects = defaultProjects) {
+        const projectContainer = document.getElementById('project-container');
+        projectContainer.innerHTML = ''; // Bersihkan kontainer sebelum menampilkan
+
+        projects.forEach((project) => {
+          const projectElement = document.createElement('div');
+          projectElement.classList.add('project-card');
+          projectElement.innerHTML = `
+            <h3>${project.title}</h3>
+            <p>${project.description}</p>
+            <a href="${project.link}" target="_blank">Lihat Project</a>
+          `;
+          projectContainer.appendChild(projectElement);
+        });
+      }
+
+      // Fungsi untuk menyimpan proyek default ke IndexedDB
+      function saveDefaultProjects() {
+        defaultProjects.forEach(project => {
+          saveData(project);
+        });
+      }
+
+      // Menyimpan proyek default ke IndexedDB jika belum ada
+      openDB();
+      saveDefaultProjects();
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/idb@7/build/esm/index.js"></script>
+
+</body>
+</html>
+
+
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link href="assets/css/main.css" rel="stylesheet">
+
+  <!-- =======================================================
+  * Template Name: PORTOFOLIO
+  * Template URL: https://bootstrapmade.com/iportfolio-bootstrap-portfolio-websites-template/
+  * Updated: Jun 29 2024 with Bootstrap v5.3.3
+  * Author: BootstrapMade.com
+  * License: https://bootstrapmade.com/license/
+  ======================================================== -->
+</head>
+
+<body class="index-page">
+
+  <header id="header" class="header dark-background d-flex flex-column">
+    <i class="header-toggle d-xl-none bi bi-list"></i>
+
+    <div class="profile-img">
+      <img src="assets/img/my-profile-img.jpg" alt="" class="img-fluid rounded-circle">
+    </div>
+
+    <a href="index.html" class="logo d-flex align-items-center justify-content-center">
+      <!-- Uncomment the line below if you also wish to use an image logo -->
+      <!-- <img src="assets/img/logo.png" alt=""> -->
+      <h1 class="sitename">DEDE GUNAWAN</h1>
+    </a>
+
+    <div class="social-links text-center">
+      <a href="https://x.com/DedeGun28" class="twitter" target="_blank"><i class="bi bi-twitter"></i></a>
+      <a href="https://www.facebook.com/dede.a.wawanz" class="facebook" target="_blank"><i class="bi bi-facebook"></i></a>
+      <a href="https://www.instagram.com/dede_gunawan28/" class="instagram" target="_blank"><i class="bi bi-instagram"></i></a>
+      <a href="https://www.linkedin.com/in/dede-gunawan-047b59238/" class="linkedin" target="_blank"><i class="bi bi-linkedin"></i></a>
+    </div>
+
+    <nav id="navmenu" class="navmenu">
+      <ul>
+        <li><a href="#hero" class="active"><i class="bi bi-house navicon"></i>Home</a></li>
+        <li><a href="#about"><i class="bi bi-person navicon"></i> About</a></li>
+        <li><a href="#resume"><i class="bi bi-file-earmark-text navicon"></i> Resume</a></li>
+        <li><a href="#portfolio"><i class="bi bi-images navicon"></i> Portfolio</a></li>
+        <li><a href="#contact"><i class="bi bi-envelope navicon"></i> Contact</a></li>
+      </ul>
+    </nav>
+
+  </header>
+
+  <main class="main">
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero section dark-background">
+
+      <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in" class="">
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <h2>DEDE GUNAWAN</h2>
+        <p>I'm <span class="typed" data-typed-items="Designer, Developer, Freelancer, Photographer">Designer</span><span class="typed-cursor typed-cursor--blink" aria-hidden="true"></span><span class="typed-cursor typed-cursor--blink" aria-hidden="true"></span></p>
+      </div>
+
+    </section><!-- /Hero Section -->
+
+    <!-- About Section -->
+    <section id="about" class="about section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>About</h2>
+        <p>Halo! Saya seorang desainer grafis yang sangat tertarik dalam eksplorasi desain visual, mulai dari editing foto dan video hingga menciptakan desain yang inovatif. Saya mahir dalam menggunakan berbagai software seperti CapCut, Canva, Photoshop, Adobe Illustrator, CorelDRAW, dan Adobe Lightroom, serta memiliki pengalaman kerja di kantor percetakan desain grafis di Tangerang. Selain itu, saya memiliki hobi fotografi mobil, terutama supercar, dan juga aktif berolahraga. Saat ini, saya sedang mengembangkan keterampilan saya dengan mempelajari pemrograman dan meningkatkan kemampuan bahasa Inggris saya.
+
+          .</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-4 justify-content-center">
+          <div class="col-lg-4">
+            <img src="assets/img/my-profile-img.jpg" class="img-fluid" alt="">
+          </div>
+          <div class="col-lg-8 content">
+            <h2>Graphic Designer  &amp; Photographer.</h2>
+            <p class="fst-italic py-3">
+            </p>
+            <div class="row">
+              <div class="col-lg-6">
+                <ul>
+                  <li><i class="bi bi-chevron-right"></i> <strong>Birthday:</strong> <span>28 March 2006</span></li>
+                  <li><i class="bi bi-chevron-right"></i> <strong>Phone:</strong> <span>+62 838 6773 2133</span></li>
+                  <li><i class="bi bi-chevron-right"></i> <strong>City:</strong> <span>Tegal, INDONESIA</span></li>
+                </ul>
+              </div>
+              <div class="col-lg-6">
+                <ul>
+                  <li><i class="bi bi-chevron-right"></i> <strong>Age:</strong> <span>18</span></li>
+                  <li><i class="bi bi-chevron-right"></i> <strong>Email:</strong> <span>dedenaxsadw15267@gmail.com</span></li>
+                  <li><i class="bi bi-chevron-right"></i> <strong>Freelance:</strong> <span>Available</span></li>
+                </ul>
+              </div>
+            </div>
+            <p class="py-3">
+              Perpaduan antara desain dan fotografi adalah seni menangkap dan menyampaikan emosi. Menjadi pemula berarti menikmati setiap eksperimen.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </section><!-- /About Section -->
+
+    <!-- Skills Section -->
+    <section id="skills" class="skills section light-background">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Skills</h2>
+        <p>"Mencakup branding, fotografi, grafik media sosial, dan desain cetak."</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row skills-content skills-animation">
+
+          <div class="col-lg-6">
+
+            <div class="progress">
+              <span class="skill"><span>HTML</span> <i class="val">90%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+            <div class="progress">
+              <span class="skill"><span>CSS</span> <i class="val">50%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+            <div class="progress">
+              <span class="skill"><span>JavaScript</span> <i class="val">75%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+          </div>
+
+          <div class="col-lg-6">
+
+            <div class="progress">
+              <span class="skill"><span>Lightroom</span> <i class="val">80%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+            <div class="progress">
+              <span class="skill"><span>Canva</span> <i class="val">90%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+            <div class="progress">
+              <span class="skill"><span>Photoshop</span> <i class="val">55%</i></span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div><!-- End Skills Item -->
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section><!-- /Skills Section -->
+
+    <!-- Resume Section -->
+    <section id="resume" class="resume section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Resume</h2>
+        <p>Saya adalah seorang Graphic Designer & Photographer berpengalaman yang memiliki keahlian dalam desain visual, fotografi, dan pengeditan multimedia. Menguasai berbagai aplikasi seperti Adobe Photoshop, Illustrator, Lightroom, CorelDRAW, dan Canva, saya berkomitmen untuk menghasilkan karya yang berkualitas dan estetis. Dengan pengalaman di percetakan dan proyek desain independen, saya terampil menciptakan konten visual yang menarik serta mampu bekerja dalam lingkungan kolaboratif. Saya juga memiliki minat yang kuat dalam bidang pemrograman dan bersemangat untuk mengembangkan keterampilan baru di dunia digital.
+          
+          Keahlian Utama
+          
+          Desain Grafis (Adobe Suite, CorelDRAW, Canva)
+          Fotografi & Pengeditan Foto (Lightroom, Photoshop)
+          Pembuatan Video (CapCut, Adobe Premiere)
+          Pengembangan Portofolio PWA
+          Kreativitas dan Perhatian terhadap Detail
+          Pengalaman
+          Desainer Grafis – Percetakan di Kota Tangerang
+          
+          Menghasilkan desain berkualitas tinggi untuk materi promosi, logo, dan identitas visual.
+          Berinteraksi dengan klien untuk memenuhi kebutuhan desain mereka secara efektif.
+          Fotografer Independen
+          
+          Mengambil dan mengedit foto produk, acara, dan portrait, dengan penekanan pada detail dan komposisi.
+          Memiliki spesialisasi dalam fotografi mobil dan visual berkualitas tinggi.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container">
+
+        <div class="row">
+
+          <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+            <h3 class="resume-title">Professional Experience</h3>
+            <div class="resume-item">
+              <h4> graphic design specialist</h4>
+              <h5>2023 - Present</h5>
+              <p><em>Cipondoh , Tangerang </em></p>
+              <ul>
+                <li>Mengembangkan konsep desain untuk media cetak dan digital (seperti brosur, poster, website, dan media sosial).</li>
+                <li>Mengelola dan menghasilkan materi pemasaran visual untuk kampanye iklan.</li>
+                <li>Bekerja sama dengan tim pemasaran, copywriter, dan tim kreatif lainnya.</li>
+                <li>Membuat desain grafis untuk produk perusahaan, baik dalam bentuk cetakan maupun media digital.</li>
+                <li>Menyunting dan merevisi desain berdasarkan umpan balik klien atau tim.</li>
+                <li>Berkomunikasi langsung dengan klien untuk memahami kebutuhan desain dan merealisasikan visi mereka.</li>
+              </ul>
+            </div><!-- Edn Resume Item -->
+
+            <div class="resume-item">
+              <h4>Waiter at a Café</h4>
+              <h5>2022 - 2023</h5>
+              <p><em>Cafe Galdina , Adiwerna , Tegal</em></p>
+              <ul>
+                <li>Menerima pesanan dan mencatatnya secara akurat, serta menyajikan makanan dan minuman dengan cepat)</li>
+                <li>Memberikan rekomendasi menu berdasarkan preferensi pelanggan dan memastikan pengalaman bersantap yang menyenangkan.</li>
+                <li>Melakukan transaksi pembayaran dengan menggunakan sistem kasir dan memastikan setiap transaksi tercatat dengan tepat.</li>
+                <li>Mengatur meja untuk pelanggan dan menjaga kebersihan area cafe.</li>
+              </ul>
+            </div><!-- Edn Resume Item -->
+
+          </div>
+
+          <div class="col-lg-6" data-aos="fade-up" data-aos-delay="200">
+            <h3 class="resume-title">Internship Experience</h3>
+            <div class="resume-item">
+              <h4>Woodworking Apprentice</h4>
+              <h5>2022</h5>
+              <p><em> CV Askiah , Bengle ,  Tegal </em></p>
+              <ul>
+                <li>Membantu dalam desain produk dan pembuatan prototipe furnitur kayu.</li>
+                <li>Bekerja sama dengan tim produksi untuk meningkatkan efisiensi proses pembuatan. </li>
+                <li>Mendapatkan pengalaman dalam penggunaan mesin perkayuan dan memahami protokol keselamatan kerja.</li>
+                <li>Berpartisipasi dalam pengelolaan stok bahan kayu dan pengaturan ruang produksi.</li>
+                <li>Melakukan pemeriksaan kualitas terhadap bahan baku dan produk jadi.</li>
+              </ul>
+            </div><!-- Edn Resume Item -->
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section><!-- /Resume Section -->
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio section light-background">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Portfolio</h2>
+        <p>Menampilkan Berbagai PROJECT , PERSONAL DAN FOTO.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container">
+
+        <div class="isotope-layout" data-default-filter="*" data-layout="masonry" data-sort="original-order">
+
+          <ul class="portfolio-filters isotope-filters" data-aos="fade-up" data-aos-delay="200">
+            <li data-filter="*" class="filter-active">All</li>
+            <li data-filter=".filter-PROJECT">PROJECT</li>
+            <li data-filter=".filter-PERSONAL">PERSONAL</li>
+            <li data-filter=".filter-FOTOGRAFER">FOTOGRAFER</li>
+          </ul><!-- End Portfolio Filters -->
+
+          <div class="row gy-4 isotope-container" data-aos="fade-up" data-aos-delay="200">
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Portfolio</title>
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.1.0/css/glightbox.min.css" rel="stylesheet">
+              <link rel="stylesheet" href="style.css">
+            </head>
+            <body>
+            
+            <section id="portfolio" class="portfolio">
+              <div class="container">
+                <div class="row gy-4 isotope-container" data-aos="fade-up" data-aos-delay="200">
+                  
+                  <!-- PROJECT 1 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PROJECT" data-aos="fade-up" data-aos-delay="200">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PROJECT-1.jpg" class="img-fluid" alt="PROJECT 1">
+                      <div class="portfolio-info">
+                        <h4>PROJECT 1</h4>
+                        <a href="assets/img/portfolio/PROJECT-1.jpg" title="PROJECT 1" data-gallery="portfolio-gallery-PROJECT" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- PERSONAL 1 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PERSONAL" data-aos="fade-down" data-aos-delay="300">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PERSONAL-1.jpg" class="img-fluid" alt="PERSONAL 1">
+                      <div class="portfolio-info">
+                        <h4>PERSONAL 1</h4>
+                        <a href="assets/img/portfolio/PERSONAL-1.jpg" title="PERSONAL 1" data-gallery="portfolio-gallery-PERSONAL" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- FOTOGRAFER 1 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-FOTOGRAFER" data-aos="fade-up" data-aos-delay="400">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/FOTOGRAFER-1.jpg" class="img-fluid" alt="FOTOGRAFER 1">
+                      <div class="portfolio-info">
+                        <h4>FOTOGRAFER 1</h4>
+                        <a href="assets/img/portfolio/FOTOGRAFER-1.jpg" title="FOTOGRAFER 1" data-gallery="portfolio-gallery-FOTOGRAFER" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- PERSONAL 2 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PERSONAL" data-aos="fade-up" data-aos-delay="400">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PERSONAL-2.jpg" class="img-fluid" alt="PERSONAL 2">
+                      <div class="portfolio-info">
+                        <h4>PERSONAL 2</h4>
+                        <a href="assets/img/portfolio/PERSONAL-2.jpg" title="PERSONAL 2" data-gallery="portfolio-gallery-PERSONAL" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- PROJECT 2 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PROJECT" data-aos="fade-down" data-aos-delay="400">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PROJECT-2.jpg" class="img-fluid" alt="PROJECT 2">
+                      <div class="portfolio-info">
+                        <h4>PROJECT 2</h4>
+                        <a href="assets/img/portfolio/PROJECT-2.jpg" title="PROJECT 2" data-gallery="portfolio-gallery-PROJECT" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- FOTOGRAFER 2 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-FOTOGRAFER" data-aos="fade-up" data-aos-delay="400">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/FOTOGRAFER-2.jpg" class="img-fluid" alt="FOTOGRAFER 2">
+                      <div class="portfolio-info">
+                        <h4>FOTOGRAFER 2</h4>
+                        <a href="assets/img/portfolio/FOTOGRAFER-2.jpg" title="FOTOGRAFER 2" data-gallery="portfolio-gallery-FOTOGRAFER" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- PERSONAL 3 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PERSONAL" data-aos="fade-down" data-aos-delay="200">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PERSONAL-3.jpg" class="img-fluid" alt="PERSONAL 3">
+                      <div class="portfolio-info">
+                        <h4>PERSONAL 3</h4>
+                        <a href="assets/img/portfolio/PERSONAL-3.jpg" title="PERSONAL 3" data-gallery="portfolio-gallery-PERSONAL" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- PROJECT 3 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-PROJECT" data-aos="fade-up" data-aos-delay="200">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/PROJECT-3.jpg" class="img-fluid" alt="PROJECT 3">
+                      <div class="portfolio-info">
+                        <h4>PROJECT 3</h4>
+                        <a href="assets/img/portfolio/PROJECT-3.jpg" title="PROJECT 3" data-gallery="portfolio-gallery-PROJECT" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                        <a href="portfolio-details.html" title="More Details" class="details-link"><i class="bi bi-link-45deg"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                  <!-- FOTOGRAFER 3 -->
+                  <div class="col-lg-4 col-md-6 portfolio-item isotope-item filter-FOTOGRAFER" data-aos="fade-down" data-aos-delay="100">
+                    <div class="portfolio-content h-100">
+                      <img src="assets/img/portfolio/FOTOGRAFER-3.jpg" class="img-fluid" alt="FOTOGRAFER 3">
+                      <div class="portfolio-info">
+                        <h4>FOTOGRAFER 3</h4>
+                        <a href="assets/img/portfolio/FOTOGRAFER-3.jpg" title="FOTOGRAFER 3" data-gallery="portfolio-gallery-FOTOGRAFER" class="glightbox preview-link"><i class="bi bi-zoom-in"></i></a>
+                      </div>
+                    </div>
+                  </div>
+            
+                </div><!-- End Portfolio Container -->
+              </div>
+            </section>
+            
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.1.0/glightbox.min.js"></script>
+            <script>
+              AOS.init();
+              const lightbox = GLightbox({
+                selector: '.glightbox'
+              });
+            </script>
+            
+            </body>
+            </html>
+            
+          </div><!-- End Portfolio Container -->
+
+        </div>
+
+      </div>
+
+    </section><!-- /Portfolio Section -->
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Contact</h2>
+        <p>Jika Anda tertarik untuk bekerja sama atau memiliki pertanyaan, silakan hubungi saya melalui salah satu metode kontak berikut</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-5">
+
+            <div class="info-wrap">
+              <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="200">
+                <i class="bi bi-geo-alt flex-shrink-0"></i>
+                <div>
+                  <h3>Address</h3>
+                  <p>Rawamangun Kec. Pulo Gadung Kota Jakarta Timur Daerah Khusus Ibukota Jakarta</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="300">
+                <i class="bi bi-telephone flex-shrink-0"></i>
+                <div>
+                  <h3>Call Us / Whatsapp</h3>
+                  <p>+62 83867732133</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="400">
+                <i class="bi bi-envelope flex-shrink-0"></i>
+                <div>
+                  <h3>Email Us</h3>
+                  <p>dedenaxsadw15267@gmail.com</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1983.5172137170252!2d106.8777454!3d-6.1988554!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f4b89a0d9921%3A0x7198f7f8e9e848a9!2sRawamangun%2C%20Kec.%20Pulo%20Gadung%2C%20Kota%20Jakarta%20Timur%2C%20Daerah%20Khusus%20Ibukota%20Jakarta!5e0!3m2!1sid!2sid!4v1699602084972!5m2!1sid!2sid" frameborder="0" style="border:0; width: 100%; height: 270px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+
+          <div class="col-lg-7">
+            <form id="contactForm" class="php-email-form" data-aos="fade-up" data-aos-delay="200">
+                <div class="row gy-4">
+                    <div class="col-md-6">
+                        <label for="name-field" class="pb-2">Your Name</label>
+                        <input type="text" name="user_name" id="name-field" class="form-control" required>
+                    </div>
+        
+                    <div class="col-md-6">
+                        <label for="email-field" class="pb-2">Your Email</label>
+                        <input type="email" class="form-control" name="user_email" id="email-field" required>
+                    </div>
+        
+                    <div class="col-md-12">
+                        <label for="subject-field" class="pb-2">Subject</label>
+                        <input type="text" class="form-control" name="subject" id="subject-field" required>
+                    </div>
+        
+                    <div class="col-md-12">
+                        <label for="message-field" class="pb-2">Message</label>
+                        <textarea class="form-control" name="message" rows="10" id="message-field" required></textarea>
+                    </div>
+        
+                    <div class="col-md-12 text-center">
+                        <button type="submit" id="submitBtn">Send Message</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Menambahkan Script untuk EmailJS -->
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+        <script type="text/javascript">
+            // Inisialisasi EmailJS dengan public key
+            (function() {
+                emailjs.init('R8a9ooZ0vuYZlurfU'); // Ganti dengan public key kamu
+            })();
+        
+            document.getElementById("contactForm").addEventListener("submit", function(event) {
+                event.preventDefault(); // Mencegah reload halaman
+        
+                const formData = new FormData(this);
+        
+                // Mengirim data form ke EmailJS
+                emailjs.sendForm('service_id', 'template_id', this) // Ganti dengan service ID dan template ID kamu
+                    .then(function(response) {
+                        alert('Message sent successfully!');
+                        document.getElementById("contactForm").reset(); // Reset form setelah pengiriman berhasil
+                    }, function(error) {
+                        alert('Failed to send message. Please try again later.');
+                    });
+            });
+        </script>
+        
+        
+  </main>
+
+  <footer id="footer" class="footer position-relative light-background">
+
+    <div class="container">
+      <div class="copyright text-center ">
+      </div>
+      <div class="credits">
+        <!-- All the links in the footer should remain intact. -->
+        <!-- You can delete the links only if you've purchased the pro version. -->
+        <!-- Licensing information: https://bootstrapmade.com/license/ -->
+        <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
+        Designed by <a href="https://bootstrapmade.com/">DEDE GUNAWAN</a>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Preloader -->
+  <div id="preloader"></div>
+
+  <!-- Vendor JS Files -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/typed.js/typed.umd.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/waypoints/noframework.waypoints.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+
+  <!-- Main JS File -->
+  <script src="assets/js/main.js"></script>
+
+</body>
+
+</html>
